@@ -1,0 +1,137 @@
+---
+title: "STAT2170 Assignment"
+output: pdf_document
+date: "2022-10-20"
+---
+
+## Question 1
+
+```{r mice}
+micepot = read.table("mice_pot.txt", header=TRUE)
+head(micepot)
+```
+
+a. Boxplots
+
+```{r}
+boxplot(percent_of_act ~ group, data = micepot, main="Marijuana on Mice",
+        xlab="group", ylab="percent of act")
+```
+
+From the boxplots, we can see that:  
+1. The variability between the group looks pretty similar
+2. Group 3 position is much lower than the other groups
+
+b. Conducting the ANOVA
+
+```{r}
+micepot.aov = aov(percent_of_act~group, data = micepot)
+summary(micepot.aov)
+```
+Let _Y_ = be the observed _percentage movement relative to the untreated mice_ for a randomly selected sample. We fit the model, $Y_{ij} = \mu_i +\epsilon_{ij}$
+where $\mu_i$
+is the mean movement percentage at level i and the random variation $\epsilon_{ij} ~ N (0, \sigma2)$. Conducting an
+F-test for the group effects
+
+* **Hypotheses**: $H_0$ : $\mu_1 = \mu_2 = \mu_3 = \mu_4$; $H_1$ : not all means are equal.
+* **Test statistic**: $F_obs = 3.126$
+* **Null distribution**: If $H_0$ is true, $F_obs$ behaves like a $F_{3,42}$ distribution
+* **P-Value**:
+$P(F_{3,42}\geqslant 3.126) = 0.0357 < 0.05$
+* **Conclusion**: Since the P-Value is less than the significance level of 0.05 (5%) we have evidence to
+reject $H_0$ in favour of $H_1$. That is, we have evidence that the percentage movement relative to the untreated mice is not all the same for all groups.
+
+c. General Contrast
+
+**Hypotheses**: $H_0$ : $\mu_4=\frac{\mu_1 + \mu_2 + \mu_3}{3}$; $H_1$ : $\mu_4\neq\frac{\mu_1 + \mu_2 + \mu_3}{3}$
+
+```{r}
+aggregate(percent_of_act ~ group, mean, data = micepot)
+```
+
+Raw test statistic: $c=\sum_{i=1}^{g}{k_i\bar{y_i}}$
+
+$c = 1\times70.66787+(-\frac{1}{3})\times100.00000 +(-\frac{1}{3})\times97.32250+(-\frac{1}{3})\times99.05235$
+
+  $= 70.66787 - 33.33333 - 32.44083 - 33.0174$
+
+  $= -28.12374$
+
+Standard error: $s.e.(c) = s_p\sqrt{\sum_{i = 1}^{g}\frac{k_i^2}{n_i}}$
+
+$s.e.(c) = \sqrt{674.8}\times\sqrt{\frac{1^2}{10}+\frac{(-\frac{1}{3})^2}{15}+\frac{(-\frac{1}{3})^2}{9}+\frac{(-\frac{1}{3})^2}{12}}$
+
+$=9.33046$
+
+t-stat:
+$t_{obs}=\frac{c}{s.e.(c)}$ under $H_0$ follows $t_{N-g}$
+
+$=\frac{-28.12374}{9.33046}$
+       
+$=-3.01419$
+
+P-value:
+```{r}
+pval <- 2*pt(3.01419, 42, lower.tail = FALSE)
+pval
+```
+$P-value = 0.004356163 < 0.05$  
+associated df = 3,42
+Since the P-Value is less than the significance level of 0.05 (5%) we have evidence to
+reject $H_0$ in favour of $H_1$. That is, we have evidence that the the group with 3mg/kg dose is significantly different from the other groups.
+
+## Question 2
+
+```{r kml}
+mykml = read.table("kml.dat", header=TRUE)
+head(mykml)
+```
+```{r}
+table(mykml[, 2:3])
+```
+
+a. Here we can see that the group sizes are same for different levels of each factor combination. So the group design is balanced.
+
+```{r}
+with(mykml, interaction.plot(driver, car, kmL, col = 1:4))
+with(mykml, interaction.plot(car, driver, kmL, col = 1:5))
+```
+
+b. From the plot there could be a possible interaction between the factors and the response since the lines have slightly
+different slopes between levels of each factor.
+
+```{r}
+boxplot(kmL~ driver + car, data = mykml)
+```
+From the plot, we could see that there are different variability in each group
+
+c. **Hypotheses**  
+1. Interaction: $H_0 : \gamma_{ij} = 0$ for all $i, j$; $H_A$ : not all $\gamma_{ij} = 0$  
+2. Main effect A: $H_0 : \alpha_i = 0$ for all $i$; $H_A$ : not all $\alpha_i = 0$  
+3. Main effect B: $H_0 : \beta_j = 0$ for all $j$; $H_A$ : not all $\beta_j = 0$
+
+```{r}
+mykml.aov = aov(kmL ~ driver*car,
+data = mykml)
+summary(mykml.aov)
+```
+
+From the ANOVA table we have the F-statistics for this context to be 1.16 with $P-Value = P(F_{12,20} \geqslant 1.16) = 0.371$ which means we do not have enough evidence to reject $H_0$, the interaction between driver and car is not related to the efficiency of the car.
+
+From the test above, we know the interaction is insignificant and can be dropped.
+
+```{r}
+mykml.2aov = aov(kmL ~ driver + car, data = mykml)
+summary(mykml.2aov)
+
+```
+
+From the ANOVA table we can see the P-value for both driver and car are $< 0.05$ which means that both of them are significant and we have the evidence to reject $H_0$ in favour of $H_1$.
+
+```{r}
+kml.final = lm(kmL ~ driver + car, data = mykml)
+kml.final
+plot(kml.final, which = 1:4)
+```
+
+d. There is no pattern in residual vs. fitted value, variability seems pretty constant between effects. The normal quantile plot of residuals is very close to linear suggesting residuals are very close to normally distributed.
